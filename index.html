@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Materiales</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+    .config-section {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+    }
+    .config-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .config-item label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+    }
+    .config-item input {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 120px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 0.9em;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+    }
+    input[type=number], select {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .total {
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-top: 20px;
+      text-align: right;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .formato {
+      background-color: #d4ffd4;
+    }
+    .retal {
+      background-color: #fff8cd;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Calculadora de Materiales</h2>
+
+    <div class="config-section">
+      <div class="config-item">
+        <label for="precioCompra">Precio kg compra:</label>
+        <input type="number" id="precioCompra" step="0.01" value="4850">
+      </div>
+      <div class="config-item">
+        <label for="margen">Margen (%):</label>
+        <input type="number" id="margen" step="0.01" value="30">
+      </div>
+    </div>
+
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Ancho (mm)</th>
+          <th>Largo (mm)</th>
+          <th>Espesor (mm)</th>
+          <th>Cantidad</th>
+          <th>Peso Unit. (kg)</th>
+          <th>Peso Total (kg)</th>
+          <th>Tipo</th>
+          <th>Precio kg venta</th>
+          <th>Precio unitario</th>
+          <th>Precio total</th>
+          <th>+IVA (19%)</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="actions">
+      <button onclick="agregarFila()">Agregar Fila</button>
+      <div class="total" id="totalFinal">Total + IVA: $0.00</div>
+    </div>
+  </div>
+
+  <script>
+    let db = [];
+    let formatos = [];
+
+    // Cargar datos de materiales
+    fetch('materiales.json')
+      .then(res => res.json())
+      .then(data => {
+        db = data;
+        // Procesar datos para obtener formatos únicos
+        formatos = [...new Set(data.map(item => item.Formato))];
+        agregarFila();
+      });
+
+    function detectarFormato(material, ancho, largo, espesor) {
+      return db.find(item =>
+        item.MATERIAL === material &&
+        Math.abs(item["Ancho (mm)"] - ancho) < 5 &&
+        Math.abs(item["Largo (mm)"] - largo) < 5 &&
+        Math.abs(item["Calibre (mm)"] - espesor) < 0.1
+      );
+    }
+
+    function calcularPeso(ancho, largo, espesor, densidad) {
+      // Convertir densidad de string a número
+      const densidadNum = parseFloat(densidad);
+      return (ancho * largo * espesor * densidadNum) / 1e6;
+    }
+
+    function actualizarFila(fila) {
+      const material = fila.querySelector(".material").value;
+      const ancho = parseFloat(fila.querySelector(".ancho").value) || 0;
+      const largo = parseFloat(fila.querySelector(".largo").value) || 0;
+      const espesor = parseFloat(fila.querySelector(".espesor").value) || 0;
+      const cantidad = parseFloat(fila.querySelector(".cantidad").value) || 1;
+
+      const item = detectarFormato(material, ancho, largo, espesor);
+
+      if (!item) {
+        fila.className = "retal";
+        fila.querySelector(".tipo").innerText = "Retal";
+        fila.querySelector(".pesoUnit").innerText = "0.00";
+        fila.querySelector(".pesoTotal").innerText = "0.00";
+        fila.querySelector(".precioKg").innerText = "0.00";
+        fila.querySelector(".precioUnit").innerText = "0.00";
+        fila.querySelector(".precioTotal").innerText = "0.00";
+        fila.querySelector(".precioIVA").innerText = "0.00";
+        actualizarTotal();
+        return;
+      }
+
+      fila.className = "formato";
+      fila.querySelector(".tipo").innerText = "Formato";
+
+      // Calcular peso
+      const pesoUnitario = calcularPeso(ancho, largo, espesor, item["Densidad Kg/mm³"]);
+      const pesoTotal = pesoUnitario * cantidad;
+      
+      // Obtener precio según formato o retal
+      const precioKg = parseFloat(item["Precio venta kilo cortado"].replace(/[^\d.]/g, '')) || 0;
+      const precioUnitario = parseFloat(item["Vlr final Venta Lámina completa"].replace(/[^\d.]/g, '')) || 0;
+      
+      // Calcular precios
+      const precioTotal = precioUnitario * cantidad;
+      const precioIVA = precioTotal * 1.19;
+
+      fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
+      fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
+      fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
+      fila.querySelector(".precioUnit").innerText = precioUnitario.toFixed(2);
+      fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
+      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
+
+      actualizarTotal();
+    }
+
+    function actualizarTotal() {
+      let total = 0;
+      document.querySelectorAll(".precioIVA").forEach(td => {
+        total += parseFloat(td.innerText) || 0;
+      });
+      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
+    }
+
+    function agregarFila() {
+      const tbody = document.querySelector("#tabla tbody");
+      const fila = document.createElement("tr");
+
+      // Obtener materiales únicos
+      const materiales = [...new Set(db.map(i => i.MATERIAL))];
+      
+      // Obtener espesores únicos
+      const espesores = [...new Set(db.map(i => i["Calibre (mm)"]))];
+
+      fila.innerHTML = `
+        <td>
+          <select class="material">
+            <option value="">Seleccionar</option>
+            ${materiales.map(m => `<option value="${m}">${m}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="number" class="ancho" step="1" min="0"></td>
+        <td><input type="number" class="largo" step="1" min="0"></td>
+        <td>
+          <select class="espesor">
+            <option value="">Seleccionar</option>
+            ${espesores.map(e => `<option value="${e}">${e}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="number" class="cantidad" value="1" min="1"></td>
+        <td class="pesoUnit">0.00</td>
+        <td class="pesoTotal">0.00</td>
+        <td class="tipo">-</td>
+        <td class="precioKg">0.00</td>
+        <td class="precioUnit">0.00</td>
+        <td class="precioTotal">0.00</td>
+        <td class="precioIVA">0.00</td>
+        <td><button class="delete-btn" onclick="this.parentElement.parentElement.remove();actualizarTotal();">Eliminar</button></td>
+      `;
+
+      fila.querySelectorAll("input, select").forEach(input => {
+        input.addEventListener("input", () => actualizarFila(fila));
+      });
+
+      tbody.appendChild(fila);
+    }
+  </script>
+</body>
+</html>
