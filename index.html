@@ -420,13 +420,19 @@
       actualizarTotal();
     }
 
-    function actualizarTotal() {
-      let total = 0;
-      document.querySelectorAll(".precioIVA").forEach(td => {
-        total += parseFloat(td.innerText) || 0;
-      });
-      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+	function actualizarTotal() {
+	  let total = 0;
+	  document.querySelectorAll(".precioIVA").forEach(td => {
+		total += parseFloat(td.innerText) || 0;
+	  });
+
+	  // Multiplica por 1000 si los valores están en miles
+	  let totalEnPesos = total * 1000;
+
+	  document.getElementById("totalFinal").innerText = 
+		`Total + IVA (19%): $${totalEnPesos.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+	}
+
 
     function agregarFila() {
       const tbody = document.querySelector("#tabla tbody");
@@ -516,6 +522,4 @@
   </script>
 </body>
 </html>
-
-
 
