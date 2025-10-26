@@ -413,7 +413,6 @@
       fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
       fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
       fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
-      fila.querySelector(".precioPliegueTotal").innerText = precioPliegueTotal.toFixed(2);
       fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
       fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
       fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
@@ -471,7 +470,7 @@
         <td class="precioUnitConPliegue result-cell">0.00</td>
         <td class="precioTotal result-cell">0.00</td>
         <td class="precioIVA result-cell">0.00</td>
-        <td><button class="delete-btn" onclick="this.parentElement.parentElement.remove();actualizarTotal();">Eliminar</button></td>
+        <td><button class="delete-btn" onclick="this.parentElement.parentElement.remove(); actualizarTotal();">Eliminar</button></td>
       `;
 
       // Evento para actualizar espesores cuando cambia el material
@@ -480,11 +479,19 @@
         actualizarFila(fila);
       });
 
-      fila.querySelectorAll("input, select").forEach(input => {
-        input.addEventListener("input", () => actualizarFila(fila));
+      // Eventos para todos los inputs y selects
+      const inputs = fila.querySelectorAll("input, select");
+      inputs.forEach(input => {
+        input.addEventListener("input", () => {
+          console.log('Input cambiado:', input.className, input.value);
+          actualizarFila(fila);
+        });
       });
 
       tbody.appendChild(fila);
+      
+      // Actualizar la fila recién creada
+      actualizarFila(fila);
     }
 
     function configurarEventos() {
