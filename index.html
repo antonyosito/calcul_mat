@@ -412,21 +412,22 @@
       fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
       fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
       fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
-      fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
-      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
-      fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
-      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
+      ila.querySelector(".precioUnit").innerText = Math.round(precioUnitarioBase / 1000) * 1000;
+      fila.querySelector(".precioUnitConPliegue").innerText = Math.round(precioUnitarioConPliegue / 1000) * 1000;
+      fila.querySelector(".precioTotal").innerText = Math.round(precioTotal / 1000) * 1000;
+      fila.querySelector(".precioIVA").innerText = Math.round(precioIVA / 1000) * 1000;
 
       actualizarTotal();
     }
 
-    function actualizarTotal() {
-      let total = 0;
-      document.querySelectorAll(".precioIVA").forEach(td => {
-        total += parseFloat(td.innerText) || 0;
-      });
-      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
-    }
+	function actualizarTotal() {
+	  let total = 0;
+	  document.querySelectorAll(".precioIVA").forEach(td => {
+		// Parsear el valor ya redondeado
+		total += parseFloat(td.innerText.replace(/\./g, '')) || 0;
+	  });
+	  document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString()}`;
+	}
 
     function agregarFila() {
       const tbody = document.querySelector("#tabla tbody");
@@ -516,3 +517,4 @@
   </script>
 </body>
 </html>
+
