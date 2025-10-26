@@ -319,13 +319,13 @@
 	  actualizarTotal();
 	}
 
-    function actualizarTotal() {
-      let total = 0;
-      document.querySelectorAll(".precioIVA").forEach(td => {
-        total += parseFloat(td.innerText) || 0;
-      });
-      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
-    }
+		function actualizarTotal() {
+		  let total = 0;
+		  document.querySelectorAll(".precioIVA").forEach(td => {
+			total += parseFloat(td.innerText.replace(/,/g, '')) || 0;
+		  });
+		  document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString()}`;
+		}
 
     function agregarFila() {
       const tbody = document.querySelector("#tabla tbody");
