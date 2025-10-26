@@ -11,7 +11,7 @@
       color: #333;
     }
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 0 auto;
       background-color: white;
       padding: 20px;
@@ -56,7 +56,7 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-      font-size: 0.85em;
+      font-size: 0.8em;
     }
     th, td {
       border: 1px solid #ddd;
@@ -129,6 +129,10 @@
       padding: 20px;
       color: #666;
     }
+    .pliegue-input {
+      width: 90px;
+      font-size: 0.8em;
+    }
   </style>
 </head>
 <body>
@@ -165,6 +169,8 @@
           <th>Tipo</th>
           <th>Precio kg venta</th>
           <th>Precio unitario</th>
+          <th>Precio pliegue</th>
+          <th>Precio unitario + pliegue</th>
           <th>Precio total</th>
           <th>+IVA (19%)</th>
           <th>Acciones</th>
@@ -209,6 +215,15 @@
         console.error('Error:', error);
         document.getElementById('loading').innerHTML = 'Error al cargar los datos: ' + error.message;
       });
+
+    // --- FUNCIONES DE CÁLCULO DE MATERIAL Y PLIEGUE ---
+    function calcularPrecioPliegue(peso) {
+      const y0 = 4500;
+      const y1 = 160000;
+      const x0 = 4;
+      const x1 = 720;
+      return peso <= x0 ? y0 : peso >= x1 ? y1 : y0 + ((peso - x0) / (x1 - x0)) * (y1 - y0);
+    }
 
     function detectarFormato(material, ancho, largo, espesor) {
       if (!material || !ancho || !largo || !espesor) return null;
@@ -268,6 +283,7 @@
       const largo = parseFloat(fila.querySelector(".largo").value) || 0;
       const espesor = parseFloat(fila.querySelector(".espesor").value) || 0;
       const cantidad = parseFloat(fila.querySelector(".cantidad").value) || 1;
+      const precioPliegueManual = parseFloat(fila.querySelector(".precioPliegueManual").value) || 0;
 
       // Obtener porcentaje de descuento/aumento
       const porcentaje = parseFloat(document.getElementById("descuentoAumento").value) || 0;
@@ -277,6 +293,11 @@
       // Buscar si es formato exacto
       const formatoExacto = detectarFormato(material, ancho, largo, espesor);
       
+      let precioUnitarioBase = 0;
+      let precioKg = 0;
+      let pesoUnitario = 0;
+      let precioPliegueCalculado = 0;
+
       if (formatoExacto) {
         // Es un formato exacto
         console.log('Formato exacto encontrado:', formatoExacto);
@@ -284,32 +305,21 @@
         fila.querySelector(".tipo").innerText = "Formato";
 
         // Calcular peso
-        const pesoUnitario = calcularPeso(ancho, largo, espesor, formatoExacto["Densidad Kg/mm³"]);
-        const pesoTotal = pesoUnitario * cantidad;
+        pesoUnitario = calcularPeso(ancho, largo, espesor, formatoExacto["Densidad Kg/mm³"]);
         
         // Obtener precio para formato (precio de lámina completa)
-        let precioUnitario = limpiarValorMonetario(formatoExacto["Vlr final Venta Lámina completa"]);
+        precioUnitarioBase = limpiarValorMonetario(formatoExacto["Vlr final Venta Lámina completa"]);
         
         // Aplicar descuento/aumento
         if (aplicarDescuento && porcentaje > 0) {
-          precioUnitario = precioUnitario * (1 - porcentaje / 100);
+          precioUnitarioBase = precioUnitarioBase * (1 - porcentaje / 100);
         } else if (aplicarAumento && porcentaje > 0) {
-          precioUnitario = precioUnitario * (1 + porcentaje / 100);
+          precioUnitarioBase = precioUnitarioBase * (1 + porcentaje / 100);
         }
         
         // Calcular precio por kg
-        const precioKg = pesoUnitario > 0 ? precioUnitario / pesoUnitario : 0;
+        precioKg = pesoUnitario > 0 ? precioUnitarioBase / pesoUnitario : 0;
         
-        // Calcular precios
-        const precioTotal = precioUnitario * cantidad;
-        const precioIVA = precioTotal * 1.19;
-
-        fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
-        fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
-        fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
-        fila.querySelector(".precioUnit").innerText = precioUnitario.toFixed(2);
-        fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
-        fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
       } else if (material && espesor > 0) {
         // Es un retal - buscar material y espesor coincidentes
         const itemRetal = db.find(i => 
@@ -323,11 +333,10 @@
           fila.querySelector(".tipo").innerText = "Retal";
 
           // Calcular peso
-          const pesoUnitario = calcularPeso(ancho, largo, espesor, itemRetal["Densidad Kg/mm³"]);
-          const pesoTotal = pesoUnitario * cantidad;
+          pesoUnitario = calcularPeso(ancho, largo, espesor, itemRetal["Densidad Kg/mm³"]);
           
           // Obtener precio para retal (precio por kg cortado)
-          let precioKg = limpiarValorMonetario(itemRetal["Precio venta kilo cortado"]);
+          precioKg = limpiarValorMonetario(itemRetal["Precio venta kilo cortado"]);
           
           // Aplicar descuento/aumento
           if (aplicarDescuento && porcentaje > 0) {
@@ -336,39 +345,47 @@
             precioKg = precioKg * (1 + porcentaje / 100);
           }
           
-          // Calcular precios
-          const precioUnitario = pesoUnitario * precioKg;
-          const precioTotal = precioUnitario * cantidad;
-          const precioIVA = precioTotal * 1.19;
-
-          fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
-          fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
-          fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
-          fila.querySelector(".precioUnit").innerText = precioUnitario.toFixed(2);
-          fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
-          fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
+          // Calcular precio unitario base
+          precioUnitarioBase = pesoUnitario * precioKg;
         } else {
           // No se encontró material para el espesor seleccionado
           fila.className = "";
           fila.querySelector(".tipo").innerText = "-";
-          fila.querySelector(".pesoUnit").innerText = "0.00";
-          fila.querySelector(".pesoTotal").innerText = "0.00";
-          fila.querySelector(".precioKg").innerText = "0.00";
-          fila.querySelector(".precioUnit").innerText = "0.00";
-          fila.querySelector(".precioTotal").innerText = "0.00";
-          fila.querySelector(".precioIVA").innerText = "0.00";
+          pesoUnitario = 0;
+          precioUnitarioBase = 0;
+          precioKg = 0;
         }
       } else {
         // Datos incompletos
         fila.className = "";
         fila.querySelector(".tipo").innerText = "-";
-        fila.querySelector(".pesoUnit").innerText = "0.00";
-        fila.querySelector(".pesoTotal").innerText = "0.00";
-        fila.querySelector(".precioKg").innerText = "0.00";
-        fila.querySelector(".precioUnit").innerText = "0.00";
-        fila.querySelector(".precioTotal").innerText = "0.00";
-        fila.querySelector(".precioIVA").innerText = "0.00";
+        pesoUnitario = 0;
+        precioUnitarioBase = 0;
+        precioKg = 0;
       }
+
+      // Calcular precio de pliegue (usar manual si está definido, sino calcular)
+      precioPliegueCalculado = precioPliegueManual > 0 ? precioPliegueManual : calcularPrecioPliegue(pesoUnitario);
+      
+      // Mostrar precio de pliegue calculado
+      fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueCalculado.toFixed(2);
+      
+      // Calcular precio unitario con pliegue
+      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueCalculado;
+      
+      // Calcular precios totales
+      const pesoTotal = pesoUnitario * cantidad;
+      const precioTotal = precioUnitarioConPliegue * cantidad;
+      const precioIVA = precioTotal * 1.19;
+
+      // Actualizar todas las celdas
+      fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
+      fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
+      fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
+      fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
+      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
+      fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
+      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
 
       actualizarTotal();
     }
@@ -408,6 +425,13 @@
         <td class="tipo">-</td>
         <td class="precioKg result-cell">0.00</td>
         <td class="precioUnit result-cell">0.00</td>
+        <td>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+            <span class="precioPliegueCalculado result-cell" style="font-size: 0.75em;">0.00</span>
+            <input type="number" class="precioPliegueManual" step="1" min="0" placeholder="Manual" style="width: 90px; font-size: 0.75em;">
+          </div>
+        </td>
+        <td class="precioUnitConPliegue result-cell">0.00</td>
         <td class="precioTotal result-cell">0.00</td>
         <td class="precioIVA result-cell">0.00</td>
         <td><button class="delete-btn" onclick="this.parentElement.parentElement.remove();actualizarTotal();">Eliminar</button></td>
