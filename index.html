@@ -404,29 +404,30 @@
       const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueTotal;
       
       // Calcular precios totales
-      const pesoTotal = pesoUnitario * cantidad;
-      const precioTotal = precioUnitarioConPliegue * cantidad;
-      const precioIVA = precioTotal * 1.19;
+	  const precioIVARedondeado = Math.round((precioTotal * 1.19) / 1000) * 1000;
+	  const precioTotalRedondeado = Math.round(precioIVARedondeado / 1.19 / 1000) * 1000;
+	  const precioUnitarioConPliegueRedondeado = precioTotalRedondeado / cantidad;
+	  const precioUnitarioBaseRedondeado = Math.round((precioUnitarioConPliegueRedondeado - precioPliegueTotal) / 1000) * 1000;
 
       // Actualizar todas las celdas
       fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
       fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
       fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
-      fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
-      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
-      fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
-      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
+      fila.querySelector(".precioUnit").innerText = precioUnitarioBaseRedondeado;
+      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegueRedondeado;
+      fila.querySelector(".precioTotal").innerText = precioTotalRedondeado;
+      fila.querySelector(".precioIVA").innerText = precioIVARedondeado;
 
       actualizarTotal();
     }
 
-    function actualizarTotal() {
-      let total = 0;
-      document.querySelectorAll(".precioIVA").forEach(td => {
-        total += parseFloat(td.innerText) || 0;
-      });
-      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
-    }
+	function actualizarTotal() {
+	  let total = 0;
+	  document.querySelectorAll(".precioIVA").forEach(td => {
+		total += parseFloat(td.innerText.replace(/,/g, '')) || 0;
+	  });
+	  document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString()}`;
+	}
 
     function agregarFila() {
       const tbody = document.querySelector("#tabla tbody");
