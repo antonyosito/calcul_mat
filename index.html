@@ -201,6 +201,9 @@
         
         // Agregar primera fila
         agregarFila();
+        
+        // Configurar eventos después de cargar los datos
+        configurarEventos();
       })
       .catch(error => {
         console.error('Error:', error);
@@ -208,6 +211,8 @@
       });
 
     function detectarFormato(material, ancho, largo, espesor) {
+      if (!material || !ancho || !largo || !espesor) return null;
+      
       return db.find(item =>
         item.MATERIAL === material &&
         Math.abs(parseFloat(item["Ancho (mm)"]) - ancho) < 5 &&
@@ -217,12 +222,15 @@
     }
 
     function calcularPeso(ancho, largo, espesor, densidad) {
+      if (!ancho || !largo || !espesor || !densidad) return 0;
+      
       // Convertir densidad de string a número
       const densidadNum = parseFloat(densidad);
       return (ancho * largo * espesor * densidadNum);
     }
 
     function limpiarValorMonetario(valor) {
+      if (!valor) return 0;
       return parseFloat(valor.toString().replace(/[^\d.]/g, '')) || 0;
     }
 
@@ -232,6 +240,8 @@
       const largo = parseFloat(fila.querySelector(".largo").value) || 0;
       const espesor = parseFloat(fila.querySelector(".espesor").value) || 0;
       const cantidad = parseFloat(fila.querySelector(".cantidad").value) || 1;
+
+      console.log('Actualizando fila:', {material, ancho, largo, espesor, cantidad});
 
       // Obtener porcentaje de descuento/aumento
       const porcentaje = parseFloat(document.getElementById("descuentoAumento").value) || 0;
@@ -248,6 +258,7 @@
         );
         
         if (!itemRetal) {
+          console.log('No se encontró material para retal');
           fila.className = "retal";
           fila.querySelector(".tipo").innerText = "Retal";
           fila.querySelector(".pesoUnit").innerText = "0.00";
@@ -260,6 +271,7 @@
           return;
         }
 
+        console.log('Retal encontrado:', itemRetal);
         fila.className = "retal";
         fila.querySelector(".tipo").innerText = "Retal";
 
@@ -269,6 +281,7 @@
         
         // Obtener precio para retal (precio por kg cortado)
         let precioKg = limpiarValorMonetario(itemRetal["Precio venta kilo cortado"]);
+        console.log('Precio kg retal original:', precioKg);
         
         // Aplicar descuento/aumento
         if (aplicarDescuento && porcentaje > 0) {
@@ -277,10 +290,14 @@
           precioKg = precioKg * (1 + porcentaje / 100);
         }
         
+        console.log('Precio kg retal final:', precioKg);
+        
         // Calcular precios
         const precioUnitario = pesoUnitario * precioKg;
         const precioTotal = precioUnitario * cantidad;
         const precioIVA = precioTotal * 1.19;
+
+        console.log('Cálculos retal:', {pesoUnitario, precioUnitario, precioTotal, precioIVA});
 
         fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
         fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
@@ -290,6 +307,7 @@
         fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
       } else {
         // Es un formato
+        console.log('Formato encontrado:', item);
         fila.className = "formato";
         fila.querySelector(".tipo").innerText = "Formato";
 
@@ -299,6 +317,7 @@
         
         // Obtener precio para formato (precio de lámina completa)
         let precioUnitario = limpiarValorMonetario(item["Vlr final Venta Lámina completa"]);
+        console.log('Precio unitario formato original:', precioUnitario);
         
         // Aplicar descuento/aumento
         if (aplicarDescuento && porcentaje > 0) {
@@ -307,12 +326,16 @@
           precioUnitario = precioUnitario * (1 + porcentaje / 100);
         }
         
+        console.log('Precio unitario formato final:', precioUnitario);
+        
         // Calcular precio por kg
-        const precioKg = precioUnitario / pesoUnitario;
+        const precioKg = pesoUnitario > 0 ? precioUnitario / pesoUnitario : 0;
         
         // Calcular precios
         const precioTotal = precioUnitario * cantidad;
         const precioIVA = precioTotal * 1.19;
+
+        console.log('Cálculos formato:', {pesoUnitario, precioKg, precioUnitario, precioTotal, precioIVA});
 
         fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
         fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
@@ -350,8 +373,8 @@
             ${materiales.map(m => `<option value="${m}">${m}</option>`).join('')}
           </select>
         </td>
-        <td><input type="number" class="ancho" step="1" min="0"></td>
-        <td><input type="number" class="largo" step="1" min="0"></td>
+        <td><input type="number" class="ancho" step="1" min="0" placeholder="mm"></td>
+        <td><input type="number" class="largo" step="1" min="0" placeholder="mm"></td>
         <td>
           <select class="espesor">
             <option value="">Seleccionar</option>
@@ -376,27 +399,25 @@
       tbody.appendChild(fila);
     }
 
-    // Agregar eventos para los checkboxes de descuento/aumento
-    document.addEventListener('DOMContentLoaded', function() {
+    function configurarEventos() {
       document.getElementById("aplicarDescuento").addEventListener("change", () => {
         document.querySelectorAll("#tabla tbody tr").forEach(fila => {
-          if (fila.querySelector(".material")) actualizarFila(fila);
+          actualizarFila(fila);
         });
       });
       
       document.getElementById("aplicarAumento").addEventListener("change", () => {
         document.querySelectorAll("#tabla tbody tr").forEach(fila => {
-          if (fila.querySelector(".material")) actualizarFila(fila);
+          actualizarFila(fila);
         });
       });
       
       document.getElementById("descuentoAumento").addEventListener("input", () => {
         document.querySelectorAll("#tabla tbody tr").forEach(fila => {
-          if (fila.querySelector(".material")) actualizarFila(fila);
+          actualizarFila(fila);
         });
       });
-    });
+    }
   </script>
 </body>
 </html>
-
