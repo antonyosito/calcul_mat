@@ -409,13 +409,13 @@
       const precioIVA = precioTotal * 1.19;
 
       // Actualizar todas las celdas
-      fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
-      fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
-      fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
-      fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
-      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
-      fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
-      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
+      fila.querySelector(".pesoUnit").innerText = pesoUnitario.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      fila.querySelector(".pesoTotal").innerText = pesoTotal.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      fila.querySelector(".precioKgCalculado").innerText = precioKg.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      fila.querySelector(".precioTotal").innerText = precioTotal.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      fila.querySelector(".precioIVA").innerText = precioIVA.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       actualizarTotal();
     }
@@ -425,7 +425,7 @@
       document.querySelectorAll(".precioIVA").forEach(td => {
         total += parseFloat(td.innerText) || 0;
       });
-      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
+      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     function agregarFila() {
@@ -464,7 +464,7 @@
         <td>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
             <span class="precioPliegueCalculado result-cell" style="font-size: 0.7em;">0.00</span>
-            <input type="number" class="precioPliegueManual" step="1" min="0" placeholder="Manual" style="width: 80px; font-size: 0.7em;">
+            <input type="number" class="precioPliegueManual" step="1" min="0" placeholder="Manual" style="width: 80px; font-size: 0.em;">
           </div>
         </td>
         <td class="precioUnitConPliegue result-cell">0.00</td>
