@@ -137,6 +137,16 @@
       width: 60px;
       font-size: 0.8em;
     }
+    .precio-kg-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .precio-kg-manual {
+      width: 80px;
+      font-size: 0.7em;
+    }
   </style>
 </head>
 <body>
@@ -290,6 +300,7 @@
       const cantidad = parseFloat(fila.querySelector(".cantidad").value) || 1;
       const cantidadPliegues = parseFloat(fila.querySelector(".cantidadPliegues").value) || 0;
       const precioPliegueManual = parseFloat(fila.querySelector(".precioPliegueManual").value) || 0;
+      const precioKgManual = parseFloat(fila.querySelector(".precioKgManual").value) || 0;
 
       // Obtener porcentaje de descuento/aumento
       const porcentaje = parseFloat(document.getElementById("descuentoAumento").value) || 0;
@@ -371,6 +382,16 @@
         precioKg = 0;
       }
 
+      // Usar precio kg manual si está definido
+      if (precioKgManual > 0) {
+        precioKg = precioKgManual;
+        
+        // Recalcular precio unitario base con el precio kg manual
+        if (pesoUnitario > 0) {
+          precioUnitarioBase = pesoUnitario * precioKg;
+        }
+      }
+
       // Calcular precio de pliegue unitario (usar manual si está definido, sino calcular)
       precioPliegueCalculado = precioPliegueManual > 0 ? precioPliegueManual : calcularPrecioPliegue(pesoUnitario);
       
@@ -381,7 +402,7 @@
       fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueCalculado.toFixed(2);
       
       // Calcular precio unitario con pliegue
-      const precioUnitarioConPliegue = precioUnitarioBase + (precioPliegueUnitario * cantidadPliegues);
+      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueTotal;
       
       // Calcular precios totales
       const pesoTotal = pesoUnitario * cantidad;
@@ -391,7 +412,7 @@
       // Actualizar todas las celdas
       fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
       fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
-      fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
+      fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
       fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
       fila.querySelector(".precioPliegueTotal").innerText = precioPliegueTotal.toFixed(2);
       fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
@@ -434,7 +455,12 @@
         <td class="pesoUnit result-cell">0.00</td>
         <td class="pesoTotal result-cell">0.00</td>
         <td class="tipo">-</td>
-        <td class="precioKg result-cell">0.00</td>
+        <td>
+          <div class="precio-kg-container">
+            <span class="precioKgCalculado result-cell" style="font-size: 0.7em;">0.00</span>
+            <input type="number" class="precioKgManual" step="0.01" min="0" placeholder="Manual" style="width: 80px; font-size: 0.7em;">
+          </div>
+        </td>
         <td class="precioUnit result-cell">0.00</td>
         <td><input type="number" class="cantidadPliegues" value="0" min="0" step="1" style="width: 60px; font-size: 0.8em;"></td>
         <td>
