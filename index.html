@@ -302,7 +302,8 @@
       let precioUnitarioBase = 0;
       let precioKg = 0;
       let pesoUnitario = 0;
-      let precioPliegueUnitario = 0;
+      let precioPliegueCalculado = 0;
+      let precioPliegueTotal = 0;
 
       if (formatoExacto) {
         // Es un formato exacto
@@ -370,17 +371,17 @@
         precioKg = 0;
       }
 
-      // Calcular precio unitario del pliegue (usar manual si está definido, sino calcular)
-      precioPliegueUnitario = precioPliegueManual > 0 ? precioPliegueManual : calcularPrecioPliegue(pesoUnitario);
+      // Calcular precio de pliegue unitario (usar manual si está definido, sino calcular)
+      precioPliegueCalculado = precioPliegueManual > 0 ? precioPliegueManual : calcularPrecioPliegue(pesoUnitario);
       
-      // Calcular precio total de pliegues para esta pieza
-      const precioPliegueTotal = precioPliegueUnitario * cantidadPliegues;
+      // Calcular precio total de pliegues (precio unitario * cantidad de pliegues)
+      precioPliegueTotal = precioPliegueCalculado * cantidadPliegues;
       
-      // Mostrar precio unitario del pliegue (NO el total)
-      fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueUnitario.toFixed(2);
+      // Mostrar precio de pliegue calculado
+      fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueCalculado.toFixed(2);
       
       // Calcular precio unitario con pliegue
-      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueTotal;
+      const precioUnitarioConPliegue = precioUnitarioBase + (precioPliegueUnitario * cantidadPliegues);
       
       // Calcular precios totales
       const pesoTotal = pesoUnitario * cantidad;
@@ -392,6 +393,7 @@
       fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
       fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
       fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
+      fila.querySelector(".precioPliegueTotal").innerText = precioPliegueTotal.toFixed(2);
       fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
       fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
       fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
