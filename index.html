@@ -415,7 +415,7 @@
       fila.querySelector(".precioUnit").innerText = Math.round(precioUnitarioBase / 1000) * 1000;
       fila.querySelector(".precioUnitConPliegue").innerText = Math.round(precioUnitarioConPliegue / 1000) * 1000;
       fila.querySelector(".precioTotal").innerText = Math.round(precioTotal / 1000) * 1000;
-      fila.querySelector(".precioIVA").innerText = Math.round(precioIVA / 1000) * 1000;
+      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
 
       actualizarTotal();
     }
@@ -423,9 +423,9 @@
 		function actualizarTotal() {
 		  let total = 0;
 		  document.querySelectorAll(".precioIVA").forEach(td => {
-			total += parseFloat(td.innerText) || 0;
+			// Parsear el valor ya redondeado
+			total += parseFloat(td.innerText.replace(/\./g, '')) || 0;
 		  });
-		  // Formatear el total con separadores de miles
 		  document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString()}`;
 		}
 
