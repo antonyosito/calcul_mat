@@ -11,7 +11,7 @@
       color: #333;
     }
     .container {
-      max-width: 1600px;
+      max-width: 1700px;
       margin: 0 auto;
       background-color: white;
       padding: 20px;
@@ -56,7 +56,7 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-      font-size: 0.8em;
+      font-size: 0.75em;
     }
     th, td {
       border: 1px solid #ddd;
@@ -130,7 +130,11 @@
       color: #666;
     }
     .pliegue-input {
-      width: 90px;
+      width: 80px;
+      font-size: 0.7em;
+    }
+    .cantidad-pliegues-input {
+      width: 60px;
       font-size: 0.8em;
     }
   </style>
@@ -169,6 +173,7 @@
           <th>Tipo</th>
           <th>Precio kg venta</th>
           <th>Precio unitario</th>
+          <th>Cant. Pliegues</th>
           <th>Precio pliegue</th>
           <th>Precio unitario + pliegue</th>
           <th>Precio total</th>
@@ -283,6 +288,7 @@
       const largo = parseFloat(fila.querySelector(".largo").value) || 0;
       const espesor = parseFloat(fila.querySelector(".espesor").value) || 0;
       const cantidad = parseFloat(fila.querySelector(".cantidad").value) || 1;
+      const cantidadPliegues = parseFloat(fila.querySelector(".cantidadPliegues").value) || 0;
       const precioPliegueManual = parseFloat(fila.querySelector(".precioPliegueManual").value) || 0;
 
       // Obtener porcentaje de descuento/aumento
@@ -297,6 +303,7 @@
       let precioKg = 0;
       let pesoUnitario = 0;
       let precioPliegueCalculado = 0;
+      let precioPliegueTotal = 0;
 
       if (formatoExacto) {
         // Es un formato exacto
@@ -364,14 +371,17 @@
         precioKg = 0;
       }
 
-      // Calcular precio de pliegue (usar manual si está definido, sino calcular)
+      // Calcular precio de pliegue unitario (usar manual si está definido, sino calcular)
       precioPliegueCalculado = precioPliegueManual > 0 ? precioPliegueManual : calcularPrecioPliegue(pesoUnitario);
+      
+      // Calcular precio total de pliegues (precio unitario * cantidad de pliegues)
+      precioPliegueTotal = precioPliegueCalculado * cantidadPliegues;
       
       // Mostrar precio de pliegue calculado
       fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueCalculado.toFixed(2);
       
       // Calcular precio unitario con pliegue
-      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueCalculado;
+      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueTotal;
       
       // Calcular precios totales
       const pesoTotal = pesoUnitario * cantidad;
@@ -383,6 +393,7 @@
       fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
       fila.querySelector(".precioKg").innerText = precioKg.toFixed(2);
       fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
+      fila.querySelector(".precioPliegueTotal").innerText = precioPliegueTotal.toFixed(2);
       fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
       fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
       fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
@@ -425,10 +436,11 @@
         <td class="tipo">-</td>
         <td class="precioKg result-cell">0.00</td>
         <td class="precioUnit result-cell">0.00</td>
+        <td><input type="number" class="cantidadPliegues" value="0" min="0" step="1" style="width: 60px; font-size: 0.8em;"></td>
         <td>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-            <span class="precioPliegueCalculado result-cell" style="font-size: 0.75em;">0.00</span>
-            <input type="number" class="precioPliegueManual" step="1" min="0" placeholder="Manual" style="width: 90px; font-size: 0.75em;">
+            <span class="precioPliegueCalculado result-cell" style="font-size: 0.7em;">0.00</span>
+            <input type="number" class="precioPliegueManual" step="1" min="0" placeholder="Manual" style="width: 80px; font-size: 0.7em;">
           </div>
         </td>
         <td class="precioUnitConPliegue result-cell">0.00</td>
