@@ -292,40 +292,141 @@
       }
     }
 
-	function actualizarFila(fila) {
-	  // ... código anterior hasta el cálculo de precioTotal ...
+    function actualizarFila(fila) {
+      const material = fila.querySelector(".material").value;
+      const ancho = parseFloat(fila.querySelector(".ancho").value) || 0;
+      const largo = parseFloat(fila.querySelector(".largo").value) || 0;
+      const espesor = parseFloat(fila.querySelector(".espesor").value) || 0;
+      const cantidad = parseFloat(fila.querySelector(".cantidad").value) || 1;
+      const cantidadPliegues = parseFloat(fila.querySelector(".cantidadPliegues").value) || 0;
+      const precioPliegueManual = parseFloat(fila.querySelector(".precioPliegueManual").value) || 0;
+      const precioKgManual = parseFloat(fila.querySelector(".precioKgManual").value) || 0;
 
-	  // Calcular precios totales
-	  const pesoTotal = pesoUnitario * cantidad;
-	  const precioTotal = precioUnitarioConPliegue * cantidad;
-	  
-	  // NUEVA LÓGICA: Calcular el precio con IVA redondeado a miles, luego quitar el IVA
-	  const precioIVARedondeado = Math.round((precioTotal * 1.19) / 1000) * 1000;
-	  const precioTotalRedondeado = Math.round(precioIVARedondeado / 1.19 / 1000) * 1000;
-	  const precioUnitarioConPliegueRedondeado = precioTotalRedondeado / cantidad;
-	  const precioUnitarioBaseRedondeado = Math.round((precioUnitarioConPliegueRedondeado - precioPliegueTotal) / 1000) * 1000;
+      // Obtener porcentaje de descuento/aumento
+      const porcentaje = parseFloat(document.getElementById("descuentoAumento").value) || 0;
+      const aplicarDescuento = document.getElementById("aplicarDescuento").checked;
+      const aplicarAumento = document.getElementById("aplicarAumento").checked;
 
-	  // Actualizar todas las celdas con valores redondeados
-	  fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
-	  fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
-	  fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
-	  
-	  // Usar los valores redondeados
-	  fila.querySelector(".precioUnit").innerText = precioUnitarioBaseRedondeado;
-	  fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegueRedondeado;
-	  fila.querySelector(".precioTotal").innerText = precioTotalRedondeado;
-	  fila.querySelector(".precioIVA").innerText = precioIVARedondeado;
+      // Buscar si es formato exacto
+      const formatoExacto = detectarFormato(material, ancho, largo, espesor);
+      
+      let precioUnitarioBase = 0;
+      let precioKg = 0;
+      let pesoUnitario = 0;
+      let precioPliegueCalculado = 0;
 
-	  actualizarTotal();
-	}
+      if (formatoExacto) {
+        // Es un formato exacto
+        console.log('Formato exacto encontrado:', formatoExacto);
+        fila.className = "formato";
+        fila.querySelector(".tipo").innerText = "Formato";
 
-		function actualizarTotal() {
-		  let total = 0;
-		  document.querySelectorAll(".precioIVA").forEach(td => {
-			total += parseFloat(td.innerText.replace(/,/g, '')) || 0;
-		  });
-		  document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString()}`;
-		}
+        // Calcular peso
+        pesoUnitario = calcularPeso(ancho, largo, espesor, formatoExacto["Densidad Kg/mm³"]);
+        
+        // Obtener precio para formato (precio de lámina completa)
+        precioUnitarioBase = limpiarValorMonetario(formatoExacto["Vlr final Venta Lámina completa"]);
+        
+        // Aplicar descuento/aumento
+        if (aplicarDescuento && porcentaje > 0) {
+          precioUnitarioBase = precioUnitarioBase * (1 - porcentaje / 100);
+        } else if (aplicarAumento && porcentaje > 0) {
+          precioUnitarioBase = precioUnitarioBase * (1 + porcentaje / 100);
+        }
+        
+        // Calcular precio por kg
+        precioKg = pesoUnitario > 0 ? precioUnitarioBase / pesoUnitario : 0;
+        
+      } else if (material && espesor > 0) {
+        // Es un retal - buscar material y espesor coincidentes
+        const itemRetal = db.find(i => 
+          i.MATERIAL === material && 
+          Math.abs(parseFloat(i["Calibre (mm)"]) - espesor) < 0.01
+        );
+        
+        if (itemRetal) {
+          console.log('Retal encontrado:', itemRetal);
+          fila.className = "retal";
+          fila.querySelector(".tipo").innerText = "Retal";
+
+          // Calcular peso
+          pesoUnitario = calcularPeso(ancho, largo, espesor, itemRetal["Densidad Kg/mm³"]);
+          
+          // Obtener precio para retal (precio por kg cortado)
+          precioKg = limpiarValorMonetario(itemRetal["Precio venta kilo cortado"]);
+          
+          // Aplicar descuento/aumento
+          if (aplicarDescuento && porcentaje > 0) {
+            precioKg = precioKg * (1 - porcentaje / 100);
+          } else if (aplicarAumento && porcentaje > 0) {
+            precioKg = precioKg * (1 + porcentaje / 100);
+          }
+          
+          // Calcular precio unitario base
+          precioUnitarioBase = pesoUnitario * precioKg;
+        } else {
+          // No se encontró material para el espesor seleccionado
+          fila.className = "";
+          fila.querySelector(".tipo").innerText = "-";
+          pesoUnitario = 0;
+          precioUnitarioBase = 0;
+          precioKg = 0;
+        }
+      } else {
+        // Datos incompletos
+        fila.className = "";
+        fila.querySelector(".tipo").innerText = "-";
+        pesoUnitario = 0;
+        precioUnitarioBase = 0;
+        precioKg = 0;
+      }
+
+      // Usar precio kg manual si está definido
+      if (precioKgManual > 0) {
+        precioKg = precioKgManual;
+        
+        // Recalcular precio unitario base con el precio kg manual
+        if (pesoUnitario > 0) {
+          precioUnitarioBase = pesoUnitario * precioKg;
+        }
+      }
+
+      // Calcular precio de pliegue unitario (usar manual si está definido, sino calcular)
+      precioPliegueCalculado = precioPliegueManual > 0 ? precioPliegueManual : calcularPrecioPliegue(pesoUnitario);
+      
+      // Calcular precio total de pliegues (precio unitario * cantidad de pliegues)
+      const precioPliegueTotal = precioPliegueCalculado * cantidadPliegues;
+      
+      // Mostrar precio de pliegue calculado
+      fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueCalculado.toFixed(2);
+      
+      // Calcular precio unitario con pliegue
+      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueTotal;
+      
+      // Calcular precios totales
+      const pesoTotal = pesoUnitario * cantidad;
+      const precioTotal = precioUnitarioConPliegue * cantidad;
+      const precioIVA = precioTotal * 1.19;
+
+      // Actualizar todas las celdas
+      fila.querySelector(".pesoUnit").innerText = pesoUnitario.toFixed(2);
+      fila.querySelector(".pesoTotal").innerText = pesoTotal.toFixed(2);
+      fila.querySelector(".precioKgCalculado").innerText = precioKg.toFixed(2);
+      fila.querySelector(".precioUnit").innerText = precioUnitarioBase.toFixed(2);
+      fila.querySelector(".precioUnitConPliegue").innerText = precioUnitarioConPliegue.toFixed(2);
+      fila.querySelector(".precioTotal").innerText = precioTotal.toFixed(2);
+      fila.querySelector(".precioIVA").innerText = precioIVA.toFixed(2);
+
+      actualizarTotal();
+    }
+
+    function actualizarTotal() {
+      let total = 0;
+      document.querySelectorAll(".precioIVA").forEach(td => {
+        total += parseFloat(td.innerText) || 0;
+      });
+      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
+    }
 
     function agregarFila() {
       const tbody = document.querySelector("#tabla tbody");
