@@ -381,7 +381,7 @@
       fila.querySelector(".precioPliegueCalculado").innerText = precioPliegueCalculado.toFixed(2);
       
       // Calcular precio unitario con pliegue
-      const precioUnitarioConPliegue = precioUnitarioBase + precioPliegueTotal;
+      const precioUnitarioConPliegue = precioUnitarioBase + (precioPliegueUnitario * cantidadPliegues);
       
       // Calcular precios totales
       const pesoTotal = pesoUnitario * cantidad;
@@ -484,3 +484,4 @@
   </script>
 </body>
 </html>
+
