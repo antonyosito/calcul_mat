@@ -312,7 +312,7 @@
         fila.querySelector(".tipo").innerText = "Formato";
 
         // Calcular peso
-        const pesoUnitario = parseFloat(item.KILOS) || calcularPeso(ancho, largo, espesor, item["Densidad Kg/mm³"]);
+        const pesoUnitario = calcularPeso(ancho, largo, espesor, item["Densidad Kg/mm³"]);
         const pesoTotal = pesoUnitario * cantidad;
         
         // Obtener precio para formato (precio de lámina completa)
@@ -353,7 +353,7 @@
       document.querySelectorAll(".precioIVA").forEach(td => {
         total += parseFloat(td.innerText) || 0;
       });
-      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toLocaleString('es-CO', {minimumFractionDigits: 2})}`;
+      document.getElementById("totalFinal").innerText = `Total + IVA (19%): $${total.toFixed(2)}`;
     }
 
     function agregarFila() {
@@ -361,7 +361,7 @@
       const fila = document.createElement("tr");
 
       // Obtener materiales únicos del JSON cargado
-      const materiales = [...new Set(db.map(i => i.MATERIAL))].sort();
+      const materiales = [...new Set(db.map(i => i.MATERIAL))];
       
       // Obtener espesores únicos del JSON cargado
       const espesores = [...new Set(db.map(i => parseFloat(i["Calibre (mm)"])))].sort((a, b) => a - b);
@@ -392,18 +392,6 @@
         <td><button class="delete-btn" onclick="this.parentElement.parentElement.remove();actualizarTotal();">Eliminar</button></td>
       `;
 
-      // Actualizar espesores según material seleccionado
-      fila.querySelector(".material").addEventListener("change", function() {
-        const material = this.value;
-        const espesorSelect = fila.querySelector(".espesor");
-        const espesoresMaterial = [...new Set(db.filter(i => i.MATERIAL === material).map(i => parseFloat(i["Calibre (mm)"])))].sort((a, b) => a - b);
-        espesorSelect.innerHTML = `
-          <option value="">Seleccionar</option>
-          ${espesoresMaterial.map(e => `<option value="${e}">${e}</option>`).join('')}
-        `;
-        actualizarFila(fila);
-      });
-
       fila.querySelectorAll("input, select").forEach(input => {
         input.addEventListener("input", () => actualizarFila(fila));
       });
@@ -413,14 +401,12 @@
 
     function configurarEventos() {
       document.getElementById("aplicarDescuento").addEventListener("change", () => {
-        document.getElementById("aplicarAumento").checked = !document.getElementById("aplicarDescuento").checked;
         document.querySelectorAll("#tabla tbody tr").forEach(fila => {
           actualizarFila(fila);
         });
       });
       
       document.getElementById("aplicarAumento").addEventListener("change", () => {
-        document.getElementById("aplicarDescuento").checked = !document.getElementById("aplicarAumento").checked;
         document.querySelectorAll("#tabla tbody tr").forEach(fila => {
           actualizarFila(fila);
         });
