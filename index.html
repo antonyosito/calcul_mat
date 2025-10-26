@@ -124,6 +124,11 @@
     .result-cell {
       font-weight: bold;
     }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -145,7 +150,9 @@
       </div>
     </div>
 
-    <table id="tabla">
+    <div id="loading" class="loading">Cargando datos de materiales...</div>
+
+    <table id="tabla" style="display: none;">
       <thead>
         <tr>
           <th>Material</th>
@@ -167,88 +174,44 @@
     </table>
 
     <div class="actions">
-      <button onclick="agregarFila()">Agregar Fila</button>
+      <button onclick="agregarFila()" id="btnAgregar" style="display: none;">Agregar Fila</button>
       <div class="total" id="totalFinal">Total + IVA (19%): $0.00</div>
     </div>
   </div>
 
   <script>
     let db = [];
-    let formatos = [];
 
-    // Datos de ejemplo (en lugar de fetch)
-    const materialesData = [
-      {
-        "MATERIAL": "HR",
-        "Densidad Kg/mm³": "0.00000785",
-        "Calibre (esp)": "1/2\"\"",
-        "Calibre (mm)": "12.7",
-        "Formato": "4 x 8",
-        "ancho ": "4",
-        "largo ": "8",
-        "Ancho (mm)": "1220",
-        "Largo (mm)": "2440",
-        "KILOS": "296.77 Kg",
-        "% Utilidad fornato lámina completa": "1.10",
-        "% venta x kg cortado": "1.70",
-        "Precio kg compra": "3250",
-        "Valor formato unid sin iva": "964,509",
-        "Precio venta kilo cortado": " $ 5,525 ",
-        "Vlr del kilo para venta lamina completa": "3575",
-        "Vlr final Venta Lámina completa": " 1,060,960 ",
-        "": ""
-      },
-      {
-        "MATERIAL": "HR",
-        "Densidad Kg/mm³": "0.00000785",
-        "Calibre (esp)": "1/2\"\"",
-        "Calibre (mm)": "12.7",
-        "Formato": "120 x 6",
-        "ancho ": "120",
-        "largo ": "6",
-        "Ancho (mm)": "1200",
-        "Largo (mm)": "6000",
-        "KILOS": "717.80 Kg",
-        "% Utilidad fornato lámina completa": "1.10",
-        "% venta x kg cortado": "1.70",
-        "Precio kg compra": "3250",
-        "Valor formato unid sin iva": "2,332,863",
-        "Precio venta kilo cortado": " $ 5,525 ",
-        "Vlr del kilo para venta lamina completa": "3575",
-        "Vlr final Venta Lámina completa": " 2,566,149 ",
-        "": ""
-      },
-      {
-        "MATERIAL": "GALV",
-        "Densidad Kg/mm³": "0.00000785",
-        "Calibre (esp)": "c16",
-        "Calibre (mm)": "1.5",
-        "Formato": "4 x 8",
-        "ancho ": "4",
-        "largo ": "8",
-        "Ancho (mm)": "1220",
-        "Largo (mm)": "2440",
-        "KILOS": "35.05 Kg",
-        "% Utilidad fornato lámina completa": "1.12",
-        "% venta x kg cortado": "1.70",
-        "Precio kg compra": "4850",
-        "Valor formato unid sin iva": "170,001",
-        "Precio venta kilo cortado": " $ 8,245 ",
-        "Vlr del kilo para venta lamina completa": "5432",
-        "Vlr final Venta Lámina completa": " 190,401 ",
-        "": ""
-      }
-    ];
-
-    // Inicializar datos
-    db = materialesData;
-    formatos = [...new Set(db.map(item => item.Formato))];
+    // Cargar datos del JSON
+    fetch('materiales.json')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Error al cargar el archivo materiales.json');
+        }
+        return res.json();
+      })
+      .then(data => {
+        db = data;
+        console.log('Materiales cargados:', db.length, 'registros');
+        
+        // Ocultar loading y mostrar tabla
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('tabla').style.display = 'table';
+        document.getElementById('btnAgregar').style.display = 'block';
+        
+        // Agregar primera fila
+        agregarFila();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('loading').innerHTML = 'Error al cargar los datos: ' + error.message;
+      });
 
     function detectarFormato(material, ancho, largo, espesor) {
       return db.find(item =>
         item.MATERIAL === material &&
-        Math.abs(item["Ancho (mm)"] - ancho) < 5 &&
-        Math.abs(item["Largo (mm)"] - largo) < 5 &&
+        Math.abs(parseFloat(item["Ancho (mm)"]) - ancho) < 5 &&
+        Math.abs(parseFloat(item["Largo (mm)"]) - largo) < 5 &&
         Math.abs(parseFloat(item["Calibre (mm)"]) - espesor) < 0.1
       );
     }
@@ -374,10 +337,10 @@
       const tbody = document.querySelector("#tabla tbody");
       const fila = document.createElement("tr");
 
-      // Obtener materiales únicos
+      // Obtener materiales únicos del JSON cargado
       const materiales = [...new Set(db.map(i => i.MATERIAL))];
       
-      // Obtener espesores únicos
+      // Obtener espesores únicos del JSON cargado
       const espesores = [...new Set(db.map(i => parseFloat(i["Calibre (mm)"])))].sort((a, b) => a - b);
 
       fila.innerHTML = `
@@ -410,30 +373,29 @@
         input.addEventListener("input", () => actualizarFila(fila));
       });
 
-      // Agregar eventos para los checkboxes de descuento/aumento
+      tbody.appendChild(fila);
+    }
+
+    // Agregar eventos para los checkboxes de descuento/aumento
+    document.addEventListener('DOMContentLoaded', function() {
       document.getElementById("aplicarDescuento").addEventListener("change", () => {
-        document.querySelectorAll("tr:not(:first-child)").forEach(fila => {
+        document.querySelectorAll("#tabla tbody tr").forEach(fila => {
           if (fila.querySelector(".material")) actualizarFila(fila);
         });
       });
       
       document.getElementById("aplicarAumento").addEventListener("change", () => {
-        document.querySelectorAll("tr:not(:first-child)").forEach(fila => {
+        document.querySelectorAll("#tabla tbody tr").forEach(fila => {
           if (fila.querySelector(".material")) actualizarFila(fila);
         });
       });
       
       document.getElementById("descuentoAumento").addEventListener("input", () => {
-        document.querySelectorAll("tr:not(:first-child)").forEach(fila => {
+        document.querySelectorAll("#tabla tbody tr").forEach(fila => {
           if (fila.querySelector(".material")) actualizarFila(fila);
         });
       });
-
-      tbody.appendChild(fila);
-    }
-
-    // Inicializar con una fila
-    agregarFila();
+    });
   </script>
 </body>
 </html>
